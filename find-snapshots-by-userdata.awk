@@ -37,8 +37,14 @@ NR==1 {
         gsub(/[ ]+/,"",$i)
         column[$i] = i
     }
+    # display an error message and exit if we didn't find columns
+    # labelled "#" and "Userdata"
+    if (column["#"] == "" || column["Userdata"] == "") {
+        printf("error: expected snapper ls column names not found in input\n",
+               "/dev/stderr")
+        exit 1
+    }
 }
-
 # snapshot data begins on line 3
 NR>=3 {
     # remove nonnumeric characters (padding spaces, mount status) from #
