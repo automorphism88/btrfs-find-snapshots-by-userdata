@@ -27,20 +27,30 @@
 
 BEGIN { FS="|" } # snapper separates columns with '|' characters
 
-NR<=2 { next } # first 2 lines are the header
+# read column titles in header, so as to work with different versions of
+# snapper that reorder columns
+NR==1 {
+    for (i=1;i<=NF;i++) {
+        # remove padding spaces, then store column number indexed by title
+        gsub(/[ ]+/,"",$i)
+        column[$i] = i
+    }
+}
 
-{
-    # remove spaces used to pad column width
-    gsub(/[ ]+/,"",$2)
+# snapshot data begins on line 3
+NR>=3 {
+    # remove nonnumeric characters (padding spaces, mount status) from #
+    gsub(/[^0-9]+/,"",$column["#"])
     if (key == "") {
         # match all snapshots
-        print $2
+        print $column["#"]
     } else {
         # split userdata column into key=value pairs in case
         # multiple userdata keys are defined for a snapshot
-        split($8,u,",")
+        split($column["Userdata"],u,",")
         # construct a new array v where the keys are the values from u
         for (i in u) {
+            # remove padding spaces
             gsub(/^[ ]+/,"",u[i])
             gsub(/[ ]+$/,"",u[i])
             if (value == "") {
@@ -57,14 +67,15 @@ NR<=2 { next } # first 2 lines are the header
         # find and print our matches
         if (value == "") {
             if (key in v) {
-                print $2
+                print $column["#"]
             }
         } else {
             if (key "=" value in v) {
-                print $2
+                print $column["#"]
             }
         }
         # Wipe v so one match doesn't result in matching all subsequent lines
-        split("",v," ") # delete v only works in gawk
+        # delete v only works in gawk
+        split("",v," ")
     }
 }
